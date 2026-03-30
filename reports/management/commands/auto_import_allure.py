@@ -181,6 +181,12 @@ class Command(BaseCommand):
         if n.startswith('SMK-RUN47-'): return 'Astra 4.7', 'Astra 4.7'
         if n.startswith('SMK-RUN48-'): return 'Astra 4.8', 'Astra 4.8'
         if n.startswith('SMK-RUN38-'): return 'Astra 3.8', 'Astra 3.8'
+        if n.startswith('SMK-HOTFIX18-'): return 'HOT-FIX Astra 1.8', 'HOT-FIX Astra 1.8'
+        if n.startswith('SMK-HOTFIX48-'): return 'HOT-FIX Astra 4.8', 'HOT-FIX Astra 4.8'
+        if n.startswith('SMK-HOTFIX17-'): return 'HOT-FIX Astra 1.7', 'HOT-FIX Astra 1.7'
+        if n.startswith('SMK-HOTFIX47-'): return 'HOT-FIX Astra 4.7', 'HOT-FIX Astra 4.7'
+        if n.startswith('SMK-HOTFIX38-'): return 'HOT-FIX Astra 3.8', 'HOT-FIX Astra 3.8'
+
         return 'Other', 'Other'
 
     def fetch_allure_test_uids(self, uuid):
@@ -263,7 +269,7 @@ class Command(BaseCommand):
             build_number = rep.get('path') or rep.get('name') or ''
             if not (build_number.startswith('SMK-RUN17-') or build_number.startswith('SMK-RUN18-') or 
                     build_number.startswith('SMK-RUN48-') or build_number.startswith('SMK-RUN38-') or 
-                    build_number.startswith('SMK-RUN47-')):
+                    build_number.startswith('SMK-RUN47-') or build_number.startswith('SMK-HOTFIX18-')):
                 continue
             if not uuid or not build_number:
                 continue
