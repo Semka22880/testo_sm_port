@@ -1,0 +1,242 @@
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все прогоны</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden !important;
+            width: 100%;
+            background: #f8f9fa;
+            color: #333;
+            font-family: -apple-system, BlinkMacOSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            overflow-x: auto;
+        }
+        h1 {
+            margin: 0 0 30px;
+            color: #1a1a1a;
+            font-size: 2.2em;
+        }
+        .search-box {
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
+        }
+        .filters {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filters strong {
+            margin-right: 10px;
+            color: #555;
+            font-weight: 600;
+        }
+        .filters a {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filters a:hover, .filters a.active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            background: white;
+        }
+        table {
+            width: 100%;
+            min-width: 1000px; /* минимальная ширина, чтобы столбцы не сжимались слишком сильно */
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th {
+            background: #0d6efd;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .build-link {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .build-link:hover {
+            text-decoration: underline;
+        }
+        .unknown {
+            color: #888;
+            font-style: italic;
+        }
+        .no-data {
+            padding: 40px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Все прогоны</h1>
+
+        <!-- Поиск -->
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="Поиск по номеру билда или версии сборки...">
+        </div>
+
+        <!-- Фильтры -->
+        <div class="filters">
+            <strong>Тип:</strong>
+            <a href="?type=all" class="{% if selected_type == 'all' %}active{% endif %}">
+                Все ({{ total_builds|intcomma }})
+            </a>
+            {% for type, count in type_counts.items %}
+                <a href="?type={{ type }}" class="{% if selected_type == type %}active{% endif %}">
+                    {{ type }} ({{ count|intcomma }})
+                </a>
+            {% endfor %}
+        </div>
+
+        {% if show_release_filter %}
+        <div class="filters">
+            <strong>Версия ОС:</strong>
+            <a href="?type={{ selected_type }}" class="{% if selected_release == 'all' %}active{% endif %}">
+                Все версии
+            </a>
+            {% for rel in release_list %}
+                <a href="?type={{ selected_type }}&release={{ rel }}" class="{% if selected_release == rel %}active{% endif %}">
+                    {{ rel }}
+                </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="table-wrapper">
+            <table id="buildTable">
+                <thead>
+                    <tr>
+                        <th>Тип</th>
+                        <th>Версия ОС</th>
+                        <th>Сборка</th>
+                        <th>Билд</th>
+                        <th>Дата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for build in builds %}
+                        <tr class="build-row" data-search="{{ build.build_number }} {{ build.build_version }}">
+                            <td><strong>{{ build.build_type }}</strong></td>
+                            <td>{{ build.release_version|default:"—" }}</td>
+                            <td>{{ build.build_version|default:"—" }}</td>
+                            <td>
+                                <a href="{% url 'build_detail' build.id %}" class="build-link">
+                                    {{ build.build_number }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if build.date %}
+                                    {{ build.date }}
+                                {% else %}
+                                    <span class="unknown">дата неизвестна</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    <tr id="noDataMessage" class="no-data-row" style="display: none;">
+                        <td colspan="5" class="no-data">
+                            Ничего не найдено по запросу
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.build-row');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const text = row.getAttribute('data-search').toLowerCase();
+                if (filter === '' || text.includes(filter)) {
+                    row.classList.remove('hidden');
+                    visible++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            const noData = document.getElementById('noDataMessage');
+            if (visible === 0 && filter !== '') {
+                noData.style.display = '';
+            } else {
+                noData.style.display = 'none';
+            }
+
+            // Принудительный сброс любого скролла/сдвига
+            document.body.scrollLeft = 0;
+            document.querySelector('.container').scrollLeft = 0;
+            window.scrollTo({ left: 0, behavior: 'instant' });
+        });
+    </script>
+</body>
+</html>

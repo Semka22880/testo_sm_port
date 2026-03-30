@@ -1,0 +1,38 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+  <div class="module">
+    <h2>Редактирование тестов билда {{ original }}</h2>
+    <form method="post">
+      {% csrf_token %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Имя теста</th>
+            <th>Текущий статус</th>
+            <th>Новый статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for case in test_cases %}
+            <tr>
+              <td>{{ case.test_name }}</td>
+              <td>{{ case.status|upper }}</td>
+              <td>
+                <select name="status_{{ case.id }}">
+                  <option value="passed" {% if case.status == 'passed' %}selected{% endif %}>Passed</option>
+                  <option value="failed" {% if case.status == 'failed' %}selected{% endif %}>Failed</option>
+                  <option value="skipped" {% if case.status == 'skipped' %}selected{% endif %}>Skipped</option>
+                </select>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3">Тесты не найдены</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <input type="submit" value="Сохранить" class="default">
+    </form>
+  </div>
+{% endblock %}

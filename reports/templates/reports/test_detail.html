@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест: {{ test_case.test_name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.12);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .jump-to-failure {
+            padding: 12px 26px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 25px;
+            font-size: 1.05em;
+        }
+        .jump-to-failure:hover {
+            background: #c82333;
+        }
+        h2 {
+            margin: 0 0 15px 0;
+            color: #1a1a1a;
+        }
+        .meta {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 1.05em;
+        }
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            background: #fafafa;
+            scroll-margin-top: 120px;
+        }
+        .step.failed {
+            border-left: 6px solid #dc3545;
+            background: #fff5f5;
+        }
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            font-weight: bold;
+            color: #555;
+        }
+        .status-passed { color: #28a745; font-weight: bold; }
+        .status-failed  { color: #dc3545; font-weight: bold; }
+        .status-skipped { color: #6c757d; }
+
+        .screenshot {
+            max-width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 15px 0 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .log-content {
+            background: #f1f1f1;
+            padding: 16px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.96em;
+            line-height: 1.5;
+            border-left: 5px solid #dc3545;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'build_detail' test_case.test_run.build.id %}" class="back-link">
+            ← Назад к прогону
+        </a>
+
+        <h2>Тест: {{ test_case.test_name }}</h2>
+        
+        <div class="meta">
+            <strong>Билд:</strong> {{ test_case.test_run.build.build_number }} 
+            | <strong>Архитектура:</strong> {{ test_case.test_run.architecture }}
+            | <strong>Дата:</strong> {{ test_case.execution_date|date:"d.m.Y" }}
+            | <strong>Статус:</strong> <span class="status-{{ test_case.status }}">{{ test_case.status|upper }}</span>
+        </div>
+
+        <!-- Кнопка "Перейти к моменту падения" -->
+        {% if test_case.status == 'failed' %}
+        <button onclick="jumpToFailure()" class="jump-to-failure">
+            Перейти к моменту падения
+        </button>
+        {% endif %}
+
+        <a href="{% url 'test_history' test_case.test_name test_case.test_run.architecture %}" 
+           class="btn btn-primary mb-4" style="padding:10px 20px; background:#0d6efd; color:white; text-decoration:none; border-radius:6px;">
+            История выполнения во всех прогонах →
+        </a>
+
+        <h4>Шаги выполнения в этом прогоне</h4>
+
+        {% if steps %}
+            {% for step in steps %}
+            <div id="step-{{ forloop.counter }}" class="step {% if step.status == 'failed' or step.has_failure %}failed{% endif %}">
+                <div class="step-header">
+                    <span class="step-number">#{{ forloop.counter }}</span>
+                    <span class="status-{{ step.status }}">{{ step.status|upper }}</span>
+                </div>
+                <p><strong>{{ step.step_name }}</strong></p>
+                
+                {% if step.duration %}
+                    <small>Длительность: {{ step.duration }} мс</small>
+                {% endif %}
+
+                {% if step.screenshot %}
+                <div>
+                    <img src="http://10.177.140.34:8080/allure/reports/{{ test_case.test_run.build.uuid }}/data/attachments/{{ step.screenshot }}" 
+                         class="screenshot" 
+                         alt="Скриншот ошибки">
+                </div>
+                {% endif %}
+
+                {% if step.log_content %}
+                <div class="log-content">
+                    {{ step.log_content }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#888; font-style:italic;">Шаги выполнения ещё не загружены для этого прогона.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function jumpToFailure() {
+            const failedStep = document.querySelector('.step.failed');
+            if (failedStep) {
+                failedStep.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            } else {
+                alert('Не удалось найти шаг с падением');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Django и основной веб-стек
+Django>=4.2,<5.2
+
+# HTTP-запросы и парсинг
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# База данных
+psycopg2-binary>=2.9.9
+
+# Автозапуск задач (cron)
+django-crontab>=0.7.1
+
+# Продакшен-сервер и статика
+gunicorn>=22.0.0
+whitenoise>=6.6.0
+
+# Утилиты (на всякий случай)
+python-dateutil>=2.8.2
+
+python-dotenv
