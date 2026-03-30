@@ -96,6 +96,20 @@
             color: #666;
             font-size: 1em;
         }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1.05em;
+        }
+        .btn-primary {
+            background: #0d6efd;
+            color: white;
+        }
         .passed .stat-number { color: #28a745; }
         .failed .stat-number { color: #dc3545; }
         .skipped .stat-number { color: #6c757d; }
@@ -185,6 +199,11 @@
         {% for run in test_runs %}
         <div class="report-card">
             <div class="report-header">
+                <div class="mb-3">
+                    <a href="{% url 'edit_testrun_statuses' run.id %}" class="btn btn-primary">
+                        Редактировать статусы тестов
+                    </a>
+                </div>
                 <h2>Прогон: {{ run.architecture }}</h2>
                 <a href="{{ run.allure_report_url }}" target="_blank" class="allure-button">
                     Открыть Allure отчёт
@@ -243,7 +262,7 @@
                         <td>
                             <!-- Кнопка "История выполнения" открывает общую историю -->
                             <a href="{% url 'test_history' case.test_name case.test_run.architecture %}" 
-                            class="btn btn-sm btn-outline-secondary">
+                            class="test-table">
                                 История выполнения
                             </a>
                         </td>

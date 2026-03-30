@@ -4,6 +4,8 @@ from .models import Build, TestRun, TestCaseRun
 from packaging import version
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from .forms import TestCaseStatusForm
+
 
 
 def build_list(request):
@@ -139,3 +141,56 @@ def test_detail(request, test_case_id):
         'build': test_case.test_run.build,
     }
     return render(request, 'reports/test_detail.html', context)
+
+
+
+
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+from .models import TestRun
+from .forms import TestCaseStatusForm
+
+def edit_testrun_statuses(request, testrun_id):
+    testrun = get_object_or_404(TestRun, id=testrun_id)
+    test_cases = testrun.cases.all().order_by('test_name')
+
+    if request.method == 'POST':
+        if 'save_changes' in request.POST:
+            updated = 0
+            for case in test_cases:
+                form = TestCaseStatusForm(request.POST, prefix=f"tc_{case.id}", instance=case)
+                if form.is_valid() and form.has_changed():
+                    form.save()
+                    updated += 1
+
+            if updated > 0:
+                messages.success(request, f'Сохранено {updated} изменений.')
+            else:
+                messages.info(request, 'Изменений не было.')
+
+            return redirect('edit_testrun_statuses', testrun_id=testrun.id)
+
+        elif 'sync_allure' in request.POST:
+            try:
+                from .allure_auto_edit import update_allure_report_ssh
+                update_allure_report_ssh(testrun.build.id)
+                messages.success(request, 'Синхронизация с Allure успешно завершена.')
+            except Exception as e:
+                messages.error(request, f'Ошибка синхронизации: {e}')
+
+            return redirect('edit_testrun_statuses', testrun_id=testrun.id)
+
+    # GET
+    forms_list = []
+    for case in test_cases:
+        forms_list.append({
+            'test_case': case,
+            'form': TestCaseStatusForm(instance=case, prefix=f"tc_{case.id}")
+        })
+
+    context = {
+        'testrun': testrun,
+        'build': testrun.build,
+        'forms_list': forms_list,
+    }
+    return render(request, 'reports/edit_testrun_statuses.html', context)
